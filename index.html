@@ -604,7 +604,6 @@
             }
         }
 
-        /* 支持页面样式 */
         .support-page {
             display: none;
             width: 100%;
@@ -765,8 +764,8 @@
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-list">点击上传图片</div>
                     <p class="upload-text">拖放图片文件到此处或点击选择</p>
-                    <p class="upload-subtext">支持JPG、PNG、WebP格式，单张图片限制50MB以内</p>
-                    <input type="file" id="fileInput" class="file-input" accept="image/*" multiple>
+                    <p class="upload-subtext">支持JPG、PNG、WebP格式，单张图片限制50MB以内，每次仅处理一张图片</p>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*">
                 </div>
                 
                 <div class="file-list" id="fileList"></div>
@@ -886,7 +885,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // DOM元素引用
             const fileInput = document.getElementById('fileInput');
             const uploadArea = document.getElementById('uploadArea');
             const fileList = document.getElementById('fileList');
@@ -910,19 +908,16 @@
             const statsContainer = document.getElementById('statsContainer');
             const warningMessage = document.getElementById('warningMessage');
             const themeBtn = document.getElementById('themeBtn');
-            
-            // 支持页面相关元素
+
             const supportLink = document.getElementById('supportLink');
             const supportPage = document.getElementById('supportPage');
             const backFromSupportBtn = document.getElementById('backFromSupport');
             const mainContent = document.getElementById('mainContent');
-            
-            // 应用状态
+
             let files = [];
             let compressedBlob = null;
             let compressedFileName = '';
-            
-            // 主题功能
+
             function initTheme() {
                 const savedTheme = localStorage.getItem('theme');
                 const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
@@ -963,11 +958,9 @@
                     }
                 }
             });
-            
-            // 初始化主题
+
             initTheme();
-            
-            // 支持页面功能
+
             supportLink.addEventListener('click', function(e) {
                 e.preventDefault();
                 showSupportPage();
@@ -986,8 +979,7 @@
                 mainContent.style.display = 'flex';
                 supportPage.style.display = 'none';
             }
-            
-            // 质量滑块显示更新
+
             function updateQualityDisplay() {
                 const value = qualitySlider.value;
                 qualityValue.textContent = value;
@@ -996,8 +988,7 @@
             
             updateQualityDisplay();
             qualitySlider.addEventListener('input', updateQualityDisplay);
-            
-            // 文件上传处理
+
             uploadArea.addEventListener('click', () => fileInput.click());
             
             uploadArea.addEventListener('dragover', (e) => {
@@ -1012,10 +1003,22 @@
             uploadArea.addEventListener('drop', (e) => {
                 e.preventDefault();
                 uploadArea.classList.remove('dragover');
+                
+                if (e.dataTransfer.files.length > 1) {
+                    showError('每次只能处理一张图片，请只拖动一个文件');
+                    return;
+                }
+                
                 handleFiles(e.dataTransfer.files);
             });
             
             fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 1) {
+                    showError('每次只能处理一张图片，请只选择一个文件');
+                    e.target.value = '';
+                    return;
+                }
+                
                 handleFiles(e.target.files);
                 e.target.value = '';
             });
@@ -1023,24 +1026,18 @@
             function handleFiles(selectedFiles) {
                 errorMessage.style.display = 'none';
                 
-                // 只取第一个文件
-                const fileArray = Array.from(selectedFiles);
-                const imageFiles = fileArray.filter(file => file.type.startsWith('image/'));
+                if (selectedFiles.length === 0) return;
                 
-                if (imageFiles.length === 0) {
+                const file = selectedFiles[0];
+                
+                if (!file.type.startsWith('image/')) {
                     showError('请选择有效的图片文件（JPG、PNG、WebP等格式）');
                     return;
                 }
                 
-                const file = imageFiles[0];
-                
                 if (file.size > 50 * 1024 * 1024) {
                     showError(`文件 "${file.name}" 超过50MB限制`);
                     return;
-                }
-
-                if (imageFiles.length > 1) {
-                    showError(`已选择多个文件，仅处理第一个：${file.name}`);
                 }
                 
                 files = [file];
